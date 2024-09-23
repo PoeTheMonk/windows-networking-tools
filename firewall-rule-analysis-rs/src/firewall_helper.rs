@@ -8,7 +8,10 @@ use windows::{
         System::{
             Com::*,
             Ole::*,
-            Variant::{self, VariantChangeType, VARIANT, VT_ARRAY, VT_BSTR, VT_DISPATCH, VT_EMPTY, VT_VARIANT},
+            Variant::{
+                self, VariantChangeType, VARIANT, VT_ARRAY, VT_BSTR, VT_DISPATCH, VT_EMPTY,
+                VT_VARIANT,
+            },
         },
     },
 };
@@ -32,13 +35,15 @@ impl Eq for NormalizedFirewallRule {}
 
 impl PartialOrd for NormalizedFirewallRule {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.normalized_rule_details.partial_cmp(&other.normalized_rule_details)
+        self.normalized_rule_details
+            .partial_cmp(&other.normalized_rule_details)
     }
 }
 
 impl Ord for NormalizedFirewallRule {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.normalized_rule_details.cmp(&other.normalized_rule_details)
+        self.normalized_rule_details
+            .cmp(&other.normalized_rule_details)
     }
 }
 
@@ -56,27 +61,43 @@ unsafe fn normalize_interfaces(interfaces: VARIANT) -> windows::core::Result<Str
             "Interfaces is not an array of variants".into(),
         ));
     }
-    let parray = interfaces.Anonymous.Anonymous.Anonymous.parray.as_ref().ok_or(
-        windows::core::Error::new(E_FAIL, "Interfaces is not an array".into()),
-    )?;
+    let parray = interfaces
+        .Anonymous
+        .Anonymous
+        .Anonymous
+        .parray
+        .as_ref()
+        .ok_or(windows::core::Error::new(
+            E_FAIL,
+            "Interfaces is not an array".into(),
+        ))?;
     let array_dimensions = SafeArrayGetDim(parray);
     for i in 0..array_dimensions {
         let l_bound = SafeArrayGetLBound(parray, i + 1)?;
-        let u_bound =  SafeArrayGetUBound(parray, i + 1)?;
+        let u_bound = SafeArrayGetUBound(parray, i + 1)?;
         for j in l_bound..=u_bound {
             let mut element = VARIANT::default();
-            SafeArrayGetElement(parray, core::ptr::addr_of!( j), core::mem::transmute(core::ptr::addr_of_mut!(element)))?;
-            if element.Anonymous.Anonymous.vt != VT_BSTR{
+            SafeArrayGetElement(
+                parray,
+                core::ptr::addr_of!(j),
+                core::mem::transmute(core::ptr::addr_of_mut!(element)),
+            )?;
+            if element.Anonymous.Anonymous.vt != VT_BSTR {
                 return Err(windows::core::Error::new(
                     E_UNEXPECTED,
                     "Element is not a BSTR".into(),
                 ));
             }
-            result += element.Anonymous.Anonymous.Anonymous.bstrVal.to_string().as_str(); 
+            result += element
+                .Anonymous
+                .Anonymous
+                .Anonymous
+                .bstrVal
+                .to_string()
+                .as_str();
         }
     }
     return Ok(result);
-
 }
 
 unsafe fn normalize_firewall_rule(

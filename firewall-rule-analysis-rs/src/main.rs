@@ -1,9 +1,6 @@
-
-
 mod firewall_helper;
 
 fn main() -> windows::core::Result<()> {
-
     let mut rules = firewall_helper::build_firewall_rules()?;
     rules.sort_unstable();
     println!("Rules: {}", rules.len());
@@ -22,8 +19,8 @@ fn main() -> windows::core::Result<()> {
         }
         last_rule = Some(rule);
     }
-    
+
     println!("Duplicate rules: {}", duplicate_rule_count);
-    
+
     return Ok(());
 }
