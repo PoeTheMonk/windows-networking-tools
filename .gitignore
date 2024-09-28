@@ -1,9 +1,10 @@
 ﻿*.user
 *.filters
 *.log
-/.vs
+.vs
+.vscode
 /Win32
-/x64
+x64
 /ARM64
 
 /SetNetworkCategory/Win32
@@ -18,4 +19,4 @@
 /MultipathLatencyAnalyzer/x64
 /MultipathLatencyAnalyzer/ARM64
 
-/packages
+packages

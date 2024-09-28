@@ -16,11 +16,11 @@ use windows::{
     },
 };
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct NormalizedFirewallRule {
     rule_name: String,
     rule_description: String,
-    normalized_rule_details: String,
+    normalized_rule_details: Box<String>,
     rule_direction: NET_FW_RULE_DIRECTION,
     rule_enabled: bool,
 }
@@ -35,8 +35,7 @@ impl Eq for NormalizedFirewallRule {}
 
 impl PartialOrd for NormalizedFirewallRule {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.normalized_rule_details
-            .partial_cmp(&other.normalized_rule_details)
+        Some(self.cmp(&other))
     }
 }
 
@@ -107,8 +106,8 @@ unsafe fn normalize_firewall_rule(
     let rule_description = rule.Description()?.to_string();
     let rule_direction = rule.Direction()?;
     let rule_enabled = rule.Enabled()?.into();
-    let mut normalized_rule_details = "".to_string();
-    normalized_rule_details += format!(
+    let mut normalized_rule_details = Box::new("".to_string());
+    *normalized_rule_details += format!(
         "{}{}{}{}{}{}{}{}{}{}{}",
         rule.ApplicationName()?,
         rule.ServiceName()?,
@@ -128,9 +127,9 @@ unsafe fn normalize_firewall_rule(
     )
     .as_str();
 
-    normalized_rule_details += normalize_interfaces(rule.Interfaces()?)?.as_str();
+    *normalized_rule_details += normalize_interfaces(rule.Interfaces()?)?.as_str();
 
-    normalized_rule_details += format!(
+    *normalized_rule_details += format!(
         "{:?}{:?}{:?}",
         rule.Direction()?,
         rule.EdgeTraversal()?,
@@ -140,14 +139,14 @@ unsafe fn normalize_firewall_rule(
 
     match rule.cast::<INetFwRule2>() {
         Ok(rule2) => {
-            normalized_rule_details += format!("{}", rule2.EdgeTraversalOptions()?).as_str();
+            *normalized_rule_details += format!("{}", rule2.EdgeTraversalOptions()?).as_str();
         }
         Err(_) => {}
     }
 
     match rule.cast::<INetFwRule3>() {
         Ok(rule3) => {
-            normalized_rule_details += format!(
+            *normalized_rule_details += format!(
                 "{}{}{}{}{}{}",
                 rule3.LocalAppPackageId()?,
                 rule3.LocalUserOwner()?,
@@ -161,7 +160,7 @@ unsafe fn normalize_firewall_rule(
         Err(_) => {}
     }
 
-    normalized_rule_details = normalized_rule_details.to_lowercase();
+    *normalized_rule_details = normalized_rule_details.to_lowercase();
 
     return Ok(NormalizedFirewallRule {
         rule_name,
